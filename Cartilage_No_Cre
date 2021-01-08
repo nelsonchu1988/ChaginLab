@@ -1,0 +1,80 @@
+install.packages("ggpubr")
+install.packages("viridis")
+install.packages("ggplot2")
+install.packages("plotly")
+library(ggpubr)
+library(viridis)
+library(ggplot2)
+library(plotly)
+
+#for density plot:
+
+ggplot(ch, aes(x = a1.a2)) + 
+geom_density(aes(group = zone, color = zone, fill = zone), alpha = 0.3) 
++ facet_wrap(~mark) + scale_fill_manual(values = c("blue","red","yellow")) 
++ scale_color_manual(values = c("blue","red","yellow"))
+
+#for summary using ggplot2:
+
+ggplot(subset(ch, status == 'alive'), aes(x = mark, y = a1.a2,
+ fill = as.factor(zone)))+geom_boxplot() +
+ scale_fill_viridis(discrete = TRUE, alpha=0.6) + 
+geom_jitter(color="black", size=0.4, alpha=0.9) + 
+theme_ipsum() +theme(legend.position="right",
+plot.title = element_text(size=11)) +
+ggtitle("                                       a1/a2 ratio") +xlab("Zone ") + 
+scale_fill_manual(values = c("blue","red","yellow")) + 
+scale_color_manual(values = c("blue","red","yellow")) + ylim(2,6)
+
+#If you want to slice it:
+
+ggplot(subset(ch, status == 'alive'), aes(x = stage, y = a1.a2,
+                                          fill = as.factor(zone)))+geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) + 
+    geom_jitter(color="black", size=0.4, alpha=0.9) + 
+    theme_ipsum() +theme(legend.position="right",
+                         plot.title = element_text(size=11)) +
+    ggtitle("                                       a1/a2 ratio") +xlab("Zone ") + 
+    scale_fill_manual(values = c("blue","red","yellow")) + 
+    scale_color_manual(values = c("blue","red","yellow")) + ylim(2,6) + facet_wrap(~slice)
+
+
+
+#for dead/alive using ggplot2:
+
+ggplot(ch, aes(x = stat, y = a1.a2,
+                                          fill = as.factor(zone)))+geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) + 
+    geom_jitter(color="black", size=0.4, alpha=0.9) + 
+    theme_ipsum() +theme(legend.position="right",
+                         plot.title = element_text(size=11)) +
+    ggtitle("                                       a1/a2 ratio") +xlab("Zone ") + 
+    scale_fill_manual(values = c("blue","red","yellow")) + 
+    scale_color_manual(values = c("blue","red","yellow")) + facet_wrap(~status, scales = "free_x", dir = "v")
+
+#also you can try this:
+ch$stat1 <- paste(ch$stage, ch$status)
+ch$stat <- paste(ch$stage, ch$slice)
+ggplot(subset(ch, status == 'alive'), aes(x = stat, y = a1.a2,
+                                          fill = as.factor(zone)))+geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) + 
+    geom_jitter(color="black", size=0.4, alpha=0.9) + 
+    theme_ipsum() +theme(legend.position="right",
+                         plot.title = element_text(size=11)) +
+    ggtitle("                                       a1/a2 ratio") +xlab("Zone ") + 
+    scale_fill_manual(values = c("blue","red","yellow")) + 
+    scale_color_manual(values = c("blue","red","yellow")) + facet_wrap(~stat1, scales = "free_x", dir = "h") + ylim(2,6)
+
+#For dead/alive using ggpubr and +stat_compare_means()
+my_comparisons <- list(c("early1dead","early2deadf"),c("early1dead","early2deadt"),c("early1dead","late1dead"),c("early2deadf","early2deadt"),c("early2deadf","late1dead"),c("early1dead","early1alive"),c("early1dead","early4alive"),c("early1dead","early5alive"),c("early1dead","late1alive"),c("early1dead","late2alive"),c("early1dead","late4alive"),c("early1dead","late5alive"),c("early2deadf","early1alive"),c("early2deadf","early4alive"),c("early2deadf","early5alive"),c("early2deadf","late1alive"),c("early2deadf","late2alive"),c("early2deadf","late4alive"),c("early2deadf","late5alive"),c("early2deadt","early1alive"),c("early2deadt","early4alive"),c("early2deadt","early5alive"),c("early2deadt","late1alive"),c("early2deadt","late2alive"),c("early2deadt","late4alive"),c("early2deadt","late5alive"),c("late1dead","early1alive"),c("late1dead","early4alive"),c("late1dead","early5alive"),c("late1dead","late1alive"),c("late1dead","late2alive"),c("late1dead","late4alive"),c("late1dead","late5alive"))
+> ggboxplot(subset(ch, zone == "blue"), x = "markord", y = "a1.a2", color = "zone", palette = c("blue","red","yellow")) + stat_compare_means() + stat_compare_means(comparisons = my_comparisons)
+
+my_comparisons <- list(c("early1dead","early2deadf"),c("early1dead","early2deadt"),c("early1dead","late1dead"),c("early2deadf","early2deadt"),c("early2deadf","late1dead"),c("early1dead","early1alive"),c("early1dead","early3alive"),c("early1dead","early4alive"),c("early1dead","early5alive"),c("early1dead","late1alive"),c("early1dead","late2alive"),c("early1dead","late3alive"),c("early1dead","late4alive"),c("early1dead","late5alive"),c("early2deadf","early1alive"),c("early2deadf","early3alive"),c("early2deadf","early4alive"),c("early2deadf","early5alive"),c("early2deadf","late1alive"),c("early2deadf","late2alive"),c("early2deadf","late3alive"),c("early2deadf","late4alive"),c("early2deadf","late5alive"),c("early2deadt","early1alive"),c("early2deadt","early3alive"),c("early2deadt","early4alive"),c("early2deadt","early5alive"),c("early2deadt","late1alive"),c("early2deadt","late2alive"),c("early2deadt","late3alive"),c("early2deadt","late4alive"),c("early2deadt","late5alive"),c("late1dead","early1alive"),c("late1dead","early3alive"),c("late1dead","early4alive"),c("late1dead","early5alive"),c("late1dead","late1alive"),c("late1dead","late2alive"),c("late1dead","late3alive"),c("late1dead","late4alive"),c("late1dead","late5alive"))
+> ggboxplot(subset(ch, zone == "red"), x = "markord", y = "a1.a2", color = "zone", palette = c("red","red","yellow")) + stat_compare_means() + stat_compare_means(comparisons = my_comparisons)
+
+#This one was built using plotly:
+plot_ly(blues, y = ~a1.a2, color = ~stat2, alpha = 0.1, colors = c("blue","red","#CCCC00","blue","red","#CCCC00"), type = "violin",box = list(
++         visible = T, width = 0.6, alpha = 1.5
++     ),meanline = list(
++            visible = T
++         ))
