@@ -1,1 +1,321 @@
+SEURAT
+________________
+#Install and load the packages for the analysis
+openR <- function(x){
+library(Seurat)
+library(patchwork)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(reticulate)
+
+library(EnhancedVolcano)
+library(DoubletFinder)
+library(CytoTRACE)
+library(biomaRt)
+library(SeuratDisk)
+library(SeuratWrappers)
+library(Matrix)} 
+
+openR()
+
+#Create function for converting human gene list
+
+convertHumanGeneList <- function(x){
+require("biomaRt")
+human = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+mouse = useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+genesV2 = getLDS(attributes = c("hgnc_symbol"), filters = "hgnc_symbol", values = x , mart = human, attributesL = c("mgi_symbol"), martL = mouse, uniqueRows=T)
+humanx <- unique(genesV2[, 2])
+
+# Print the first 6 genes found to the screen
+
+print(head(humanx))
+return(humanx)
+}
+
+m.s.genes <- convertHumanGeneList(cc.genes.updated.2019$s.genes)
+
+m.g2m.genes <- convertHumanGeneList(cc.genes.updated.2019$g2m.genes)
+
+#Create the function for creating and processing the Seurat objects
+
+ProcessSeu <- function(Seurat){
+Seurat <- NormalizeData(Seurat)
+Seurat <- FindVariableFeatures(Seurat, selection.method = "vst", nfeatures = 2000)
+Seurat <- ScaleData(Seurat)
+Seurat <- RunPCA(Seurat)
+Seurat <- FindNeighbors(Seurat, dims = 1:10)
+Seurat <- FindClusters(Seurat, resolution = 0.5)
+Seurat <- RunUMAP(Seurat, dims = 1:10)
+Seurat <- RunTSNE(Seurat,  dims.use = 1:10 )
+DimPlot(object = Seurat, reduction = "umap")
+return (Seurat)
+}
+
+#Create the Seurat objects for the analysis
+
+poc.data <- Read10X_h5("C:/Users/Emil/10X/growthplate/filtered_feature_bc_matrix_poc.h5", use.names = TRUE, unique.features = TRUE)
+poc <- CreateSeuratObject(counts = poc.data, project = "poc", min.cells = 3, min.features = 200)
+poc[["percent.rb"]] <- PercentageFeatureSet(poc, pattern = "^Rps|^Rpl|^Mrps|^Mrpl", assay = 'RNA')
+poc <- CellCycleScoring(poc, s.features = m.s.genes, g2m.features = m.g2m.genes, set.ident = FALSE)
+poc[["percent.mt"]] <- PercentageFeatureSet(poc, pattern = "^mt-")
+poc <- ScaleData(poc, verbose = T, vars.to.regress = c('nCount_RNA', 'percent.mt', "percent.rb","S.Score","G2M.Score"))
+poc <- subset(poc, subset = nCount_RNA > 1000 & nCount_RNA < 20000 & nFeature_RNA > 600 & nFeature_RNA < 6000 & percent.mt < 15 & percent.rb < 30)
+poc <- ProcessSeu(poc)
+
+soc.data <- Read10X_h5("C:/Users/Emil/10X/growthplate/filtered_feature_bc_matrix_soc.h5", use.names = TRUE, unique.features = TRUE)
+soc <- CreateSeuratObject(counts = soc.data, project = "soc", min.cells = 3, min.features = 200)
+soc[["percent.rb"]] <- PercentageFeatureSet(soc, pattern = "^Rps|^Rpl|^Mrps|^Mrpl", assay = 'RNA')
+soc <- CellCycleScoring(soc, s.features = m.s.genes, g2m.features = m.g2m.genes, set.ident = FALSE)
+soc[["percent.mt"]] <- PercentageFeatureSet(soc, pattern = "^mt-")
+soc <- ScaleData(soc, verbose = T, vars.to.regress = c('nCount_RNA', 'percent.mt', "percent.rb","S.Score","G2M.Score"))
+soc <- subset(soc, subset = nCount_RNA > 1000 & nCount_RNA < 20000 & nFeature_RNA > 600 & nFeature_RNA < 6000 & percent.mt < 15 & percent.rb < 30)
+soc <- ProcessSeu(soc)
+
+pocGH.data <- Read10X_h5("C:/Users/Emil/10X/growthplate/filtered_feature_bc_matrix_poc55.h5", use.names = TRUE, unique.features = TRUE)
+pocGH <- CreateSeuratObject(counts = pocGH.data, project = "poc", min.cells = 3, min.features = 200)
+pocGH[["percent.rb"]] <- PercentageFeatureSet(pocGH, pattern = "^Rps|^Rpl|^Mrps|^Mrpl", assay = 'RNA')
+pocGH <- CellCycleScoring(pocGH, s.features = m.s.genes, g2m.features = m.g2m.genes, set.ident = FALSE)
+pocGH[["percent.mt"]] <- PercentageFeatureSet(pocGH, pattern = "^mt-")
+pocGH <- ScaleData(pocGH, verbose = T, vars.to.regress = c('nCount_RNA', 'percent.mt', "percent.rb","S.Score","G2M.Score"))
+pocGH <- subset(pocGH, subset = nCount_RNA > 1000 & nCount_RNA < 20000 & nFeature_RNA > 600 & nFeature_RNA < 6000 & percent.mt < 15 & percent.rb < 30)
+pocGH <- ProcessSeu(pocGH)
+
+socGH.data <- Read10X_h5("C:/Users/Emil/10X/growthplate/filtered_feature_bc_matrix_soc56.h5", use.names = TRUE, unique.features = TRUE)
+socGH <- CreateSeuratObject(counts = socGH.data, project = "soc", min.cells = 3, min.features = 200)
+socGH[["percent.rb"]] <- PercentageFeatureSet(socGH, pattern = "^Rps|^Rpl|^Mrps|^Mrpl", assay = 'RNA')
+socGH <- CellCycleScoring(socGH, s.features = m.s.genes, g2m.features = m.g2m.genes, set.ident = FALSE)
+socGH[["percent.mt"]] <- PercentageFeatureSet(socGH, pattern = "^mt-")
+socGH <- ScaleData(socGH, verbose = T, vars.to.regress = c('nCount_RNA', 'percent.mt', "percent.rb","S.Score","G2M.Score"))
+socGH <- subset(socGH, subset = nCount_RNA > 1000 & nCount_RNA < 20000 & nFeature_RNA > 600 & nFeature_RNA < 6000 & percent.mt < 15 & percent.rb < 30)
+socGH <- ProcessSeu(socGH)
+
+pocV.data <- Read10X_h5("C:/Users/Emil/10X/growthplate/filtered_feature_bc_matrix_pocV.h5", use.names = TRUE, unique.features = TRUE)
+pocV <- CreateSeuratObject(counts = pocV.data, project = "poc", min.cells = 3, min.features = 200)
+pocV[["percent.rb"]] <- PercentageFeatureSet(pocV, pattern = "^Rps|^Rpl|^Mrps|^Mrpl", assay = 'RNA')
+pocV <- CellCycleScoring(pocV, s.features = m.s.genes, g2m.features = m.g2m.genes, set.ident = FALSE)
+pocV[["percent.mt"]] <- PercentageFeatureSet(pocV, pattern = "^mt-")
+pocV <- ScaleData(pocV, verbose = T, vars.to.regress = c('nCount_RNA', 'percent.mt', "percent.rb","S.Score","G2M.Score"))
+pocV <- subset(pocV, subset = nCount_RNA > 1000 & nCount_RNA < 20000 & nFeature_RNA > 600 & nFeature_RNA < 6000 & percent.mt < 15 & percent.rb < 30)
+pocV <- ProcessSeu(pocV)
+
+socV.data <- Read10X_h5("C:/Users/Emil/10X/growthplate/filtered_feature_bc_matrix_socV.h5", use.names = TRUE, unique.features = TRUE)
+socV <- CreateSeuratObject(counts = socV.data, project = "soc", min.cells = 3, min.features = 200)
+socV[["percent.rb"]] <- PercentageFeatureSet(socV, pattern = "^Rps|^Rpl|^Mrps|^Mrpl", assay = 'RNA')
+socV <- CellCycleScoring(socV, s.features = m.s.genes, g2m.features = m.g2m.genes, set.ident = FALSE)
+socV[["percent.mt"]] <- PercentageFeatureSet(socV, pattern = "^mt-")
+socV <- ScaleData(socV, verbose = T, vars.to.regress = c('nCount_RNA', 'percent.mt', "percent.rb","S.Score","G2M.Score"))
+socV <- subset(socV, subset = nCount_RNA > 1000 & nCount_RNA < 20000 & nFeature_RNA > 600 & nFeature_RNA < 6000 & percent.mt < 15 & percent.rb < 30)
+socV <- ProcessSeu(socV)
+
+#Create function for finding the doublets
+
+RDoublet <- function(tmp){
+sweep.res.list <- paramSweep_v3(tmp, PCs = 1:30, sct = FALSE)
+sweep.stats <- summarizeSweep(sweep.res.list, GT = FALSE)
+bcmvn <- find.pK(sweep.stats)
+pKopt <- as.numeric(as.character(bcmvn$pK[bcmvn$BCmetric == max(bcmvn$BCmetric)]))
+pKopt <- pKopt[order(pKopt, decreasing = TRUE) ]
+pKopt <- pKopt[1]
+homotypic.prop <- modelHomotypic(tmp$seurat_clusters) 
+nExp_poi <- round(0.1*length(colnames(tmp)))  ## Assuming 10% doublet formation rate 
+nExp_poi.adj <- round(nExp_poi*(1-homotypic.prop))
+tmp <- doubletFinder_v3(tmp, PCs = 1:30, pN = 0.25, pK = pKopt, nExp = nExp_poi, reuse.pANN = FALSE)
+tmp <- doubletFinder_v3(tmp, PCs = 1:30, pN = 0.25, pK = pKopt, nExp = nExp_poi.adj, reuse.pANN = paste("pANN_0.25",pKopt,nExp_poi, sep="_"))
+return (tmp) 
+}
+
+poc <- RDoublet(poc)
+soc <- RDoublet(soc)
+pocGH <- RDoublet(pocGH)
+socGH <- RDoublet(socGH)
+pocV <- RDoublet(pocV)
+socV <- RDoublet(socV)
+
+poc <- subset(poc, subset = DF.classifications_0.25_0.005_360 == 'Singlet')
+poc <- subset(poc, subset = DF.classifications_0.25_0.005_318 == 'Singlet')
+soc <- subset(soc, subset = DF.classifications_0.25_0.005_360 == 'Singlet')
+soc <- subset(soc, subset = DF.classifications_0.25_0.005_318 == 'Singlet')
+
+pocGH <- subset(pocGH, subset = DF.classifications_0.25_0.005_360 == 'Singlet')
+pocGH <- subset(pocGH, subset = DF.classifications_0.25_0.005_318 == 'Singlet')
+socGH <- subset(socGH, subset = DF.classifications_0.25_0.005_360 == 'Singlet')
+socGH <- subset(socGH, subset = DF.classifications_0.25_0.005_318 == 'Singlet')
+
+pocV <- subset(pocV, subset = DF.classifications_0.25_0.005_360 == 'Singlet')
+pocV <- subset(pocV, subset = DF.classifications_0.25_0.005_318 == 'Singlet')
+socV <- subset(socV, subset = DF.classifications_0.25_0.005_360 == 'Singlet')
+socV <- subset(socV, subset = DF.classifications_0.25_0.005_318 == 'Singlet')
+
+#Check the Seurat objects for chondro- populations (Col2a1 + Sox9), subset the positive clusters
+
+FeaturePlot(poc, features = c('Sox9','Col2a1'))
+DimPlot(poc, reduction = 'umap', label = TRUE, repel = TRUE)
+pocsubset <- subset(poc, idents = c('9','5','4','8','3','11'))
+FeaturePlot(pocsubset, features = c('Sox9','Col2a1'))
+
+#Recluster the subset for further precise subsetting
+
+pocsubset <- ProcessSeu(pocsubset)
+FeaturePlot(pocsubset, features = c('Sox9','Col2a1'))
+DimPlot(pocsubset, reduction = 'umap', label = TRUE, repel = TRUE)
+pocsubset <- subset(pocsubset, idents = c('4','1','7','3','2','5','8','6'))
+FeaturePlot(pocsubset, features = c('Sox9','Col2a1'))
+
+FeaturePlot(soc, features = c('Sox9','Col2a1'))
+DimPlot(soc, reduction = 'umap', label = TRUE, repel = TRUE)
+socsubset <- subset(soc, idents = c('9','5','4','8','13','11'))
+FeaturePlot(socsubset, features = c('Sox9','Col2a1'))
+
+socsubset <- ProcessSeu(socsubset)
+FeaturePlot(socsubset, features = c('Sox9','Col2a1'))
+DimPlot(socsubset, reduction = 'umap', label = TRUE, repel = TRUE)
+socsubset <- subset(socsubset, idents = c('4','3','6','1','2','0','5'))
+FeaturePlot(socsubset, features = c('Sox9','Col2a1'))
+
+#############ADD THE CODE FOR SUBSETTING POCGH AND SOCGH
+FeaturePlot(pocV, features = c('Sox9','Col2a1'))
+DimPlot(pocV, reduction = 'umap', label = TRUE, repel = TRUE)
+pocVsubset <- subset(pocV, idents = c('12','15','13','5','11'))
+FeaturePlot(pocVsubset, features = c('Sox9','Col2a1'))
+
+pocVsubset <- ProcessSeu(pocVsubset)
+FeaturePlot(pocVsubset, features = c('Sox9','Col2a1'))
+DimPlot(pocVsubset, reduction = 'umap', label = TRUE, repel = TRUE)
+FeaturePlot(pocVsubset, features = c('Sox9','Col2a1','Prg4','Prrx1','Adipoq','Cxcl12'))
+
+FeaturePlot(socV, features = c('Sox9','Col2a1'))
+DimPlot(socV, reduction = 'umap', label = TRUE, repel = TRUE)
+socVsubset <- subset(socV, idents = c('4','0','13'))
+FeaturePlot(socVsubset, features = c('Sox9','Col2a1'))
+
+socVsubset <- ProcessSeu(socVsubset)
+FeaturePlot(socVsubset, features = c('Sox9','Col2a1'))
+DimPlot(socVsubset, reduction = 'umap', label = TRUE, repel = TRUE)
+FeaturePlot(socVsubset, features = c('Sox9','Col2a1','Prg4','Prrx1','Adipoq','Cxcl12'))
+
+#Integrate the Seurat object with the integration function
+
+ProcessInt(my_data_frame) #This line is to choose the dataset for Integrated Processing in Seurat
+
+ProcessInt <- function(data.integrated){
+data.integrated <- ScaleData(data.integrated, verbose = FALSE)
+data.integrated <- RunPCA(data.integrated, npcs = 30, verbose = FALSE)
+data.integrated <- FindNeighbors(data.integrated, dims = 1:20)
+data.integrated <- FindClusters(data.integrated, resolution = 0.5)
+data.integrated <- RunUMAP(data.integrated, reduction = "pca", dims = 1:20)
+data.integrated <- RunTSNE(data.integrated,  dims.use = 1:10 )
+}
+
+#Choose the objects for integration
+
+integration_list <- list(poc, pocGH, soc, socGH, pocV, socV)
+
+features <- SelectIntegrationFeatures(object.list = integration_list)
+data.anchors <- FindIntegrationAnchors(object.list = integration_list, anchor.features = features)
+
+data.combined <- IntegrateData(anchorset = data.anchors)
+
+pocpocGHsocsocGHpocVsocV <- ProcessInt(data.combined)
+
+#Rename the cells for future export of .csv to velocity
+
+pocsubset <- RenameCells(
+  object = pocsubset,
+  new.names = paste0("10X_21_020:", sub('_1','', colnames(x = pocsubset)))
+)
+
+pocsubset <- RenameCells(
+  object = pocsubset,
+  new.names = paste0("", sub('-1','', colnames(x = pocsubset)),"x")
+)
+
+socsubset <- RenameCells(
+  object = socsubset,
+  new.names = paste0("10X_21_019:", sub('_2','', colnames(x = socsubset)))
+)
+
+socsubset <- RenameCells(
+  object = socsubset,
+  new.names = paste0("", sub('-1','', colnames(x = socsubset)),"x")
+)
+
+pocGHsubset <- RenameCells(
+  object = pocGHsubset,
+  new.names = paste0("10X_21_018:", sub('_3','', colnames(x = pocGHsubset)))
+)
+
+pocGHsubset <- RenameCells(
+  object = pocGHsubset,
+  new.names = paste0("", sub('-1','', colnames(x = pocGHsubset)),"x")
+)
+
+socGHsubset <- RenameCells(
+  object = socGHsubset,
+  new.names = paste0("10X_21_017:", sub('_4','', colnames(x = socGHsubset)))
+)
+
+socGHsubset <- RenameCells(
+  object = socGHsubset,
+  new.names = paste0("", sub('-1','', colnames(x = socGHsubset)),"x")
+)
+
+pocVsubset <- RenameCells(
+  object = pocVsubset,
+  new.names = paste0("10X_20_055:", sub('_5','', colnames(x = pocVsubset)))
+)
+
+pocVsubset <- RenameCells(
+  object = pocVsubset,
+  new.names = paste0("", sub('-1','', colnames(x = pocVsubset)),"x")
+)
+
+socVsubset <- RenameCells(
+  object = socVsubset,
+  new.names = paste0("10X_20_056:", sub('_6','', colnames(x = socVsubset)))
+)
+
+socVsubset <- RenameCells(
+  object = socVsubset,
+  new.names = paste0("", sub('-1','', colnames(x = socVsubset)),"x")
+)
+#########DUNNO HOW TO EXPORT WITH RNAS
+
+#Write the .csv files - Cells, Embeddings and Clusters
+
+write.csv(Cells(pocsubset), file = "pocsubsetcellID_obs.csv", row.names = FALSE)
+write.csv(Embeddings(pocsubset, reduction = "tsne"), file = "pocsubsetcell_embeddings.csv")
+write.csv(pocsubset@meta.data$seurat_clusters, file = "pocsubsetclusters.csv")
+
+write.csv(Cells(socsubset), file = "socsubsetcellID_obs.csv", row.names = FALSE)
+write.csv(Embeddings(socsubset, reduction = "tsne"), file = "socsubsetcell_embeddings.csv")
+write.csv(socsubset@meta.data$seurat_clusters, file = "socsubsetclusters.csv")
+
+write.csv(Cells(pocGHsubset), file = "pocGHsubsetcellID_obs.csv", row.names = FALSE)
+write.csv(Embeddings(pocGHsubset, reduction = "tsne"), file = "pocGHsubsetcell_embeddings.csv")
+write.csv(pocGHsubset@meta.data$seurat_clusters, file = "pocGHsubsetclusters.csv")
+
+write.csv(Cells(socGHsubset), file = "socGHsubsetcellID_obs.csv", row.names = FALSE)
+write.csv(Embeddings(socGHsubset, reduction = "tsne"), file = "socGHsubsetcell_embeddings.csv")
+write.csv(socGHsubset@meta.data$seurat_clusters, file = "socGHsubsetclusters.csv")
+
+write.csv(Cells(pocVsubset), file = "pocVsubsetcellID_obs.csv", row.names = FALSE)
+write.csv(Embeddings(pocVsubset, reduction = "tsne"), file = "pocVsubsetcell_embeddings.csv")
+write.csv(pocVsubset@meta.data$seurat_clusters, file = "pocVsubsetclusters.csv")
+
+write.csv(Cells(socVsubset), file = "socVsubsetcellID_obs.csv", row.names = FALSE)
+write.csv(Embeddings(socVsubset, reduction = "tsne"), file = "socVsubsetcell_embeddings.csv")
+write.csv(socVsubset@meta.data$seurat_clusters, file = "socVsubsetclusters.csv")
+
+VELOCITY
+________________
+
+
+SCENIC
+________________
+
+
+ESCAPE
+________________
 
