@@ -310,8 +310,737 @@ write.csv(socVsubset@meta.data$seurat_clusters, file = "socVsubsetclusters.csv")
 
 VELOCITY
 ________________
+#ADD DATA FOR VIENNA POC SOC
+
+import anndata
+import scvelo as scv
+import pandas as pd
+import numpy as np
+import matplotlib as plt
+import os
+import sys
+import velocyto
+
+!pip install rpy2
+
+os.getcwd()
+file_path = os.path.join(os.getcwd(),'./h5_sample_data/10X_21_017.loom')
+file_path
+
+#loading of loom files
+GHSOC = scv.read(r"/mnt/c/Users/Emil/10X/Baoyi_gp_test/10X_21_017.loom", cache=True)
+GHPOC = scv.read(r"/mnt/c/Users/Emil/10X/Baoyi_gp_test/10X_21_018.loom", cache=True)
+CSOC = scv.read(r"/mnt/c/Users/Emil/10X/Baoyi_gp_test/10X_21_019.loom", cache=True)
+CPOC = scv.read(r"/mnt/c/Users/Emil/10X/Baoyi_gp_test/10X_21_020.loom", cache=True)
+
+GHSOC.var_names_make_unique()
+GHPOC.var_names_make_unique()
+CSOC.var_names_make_unique()
+CPOC.var_names_make_unique()
+
+GHSOC
+GHSOC.obs.index
+
+CPOCcellID_obs
+
+#loading of CellID, tsne and cluster matrix(Csv) derived from R
+CPOCcellID_obs = pd.read_csv(r"//mnt//c//Users//Emil//10X//Baoyi_gp_test//CPOCcellID_obs.csv") #x from seurat; y&z manually sorted to look like WT3.obs.index
+CPOCtsne = pd.read_csv(r"//mnt//c//Users//Emil//10X//Baoyi_gp_test///CPOCcell_embeddings.csv") #renaming tsne to umap for coding only
+CPOCcell_clusters = pd.read_csv(r"//mnt//c//Users//Emil//10X//Baoyi_gp_test//CPOCclusters.csv")
+# paste0(, colnames)
+# sub (, pattern replacement)
+#  scanpy replace np.array np.add ,   add map list replace 
+CSOCcellID_obs = pd.read_csv(r"//mnt//c//Users//Emil//10X//Baoyi_gp_test//CSOCcellID_obs.csv") #x from seurat; y&z manually sorted to look like WT3.obs.index
+CSOCtsne = pd.read_csv(r"//mnt//c//Users//Emil//10X//Baoyi_gp_test///CSOCcell_embeddings.csv") #renaming tsne to umap for coding only
+CSOCcell_clusters = pd.read_csv(r"//mnt//c//Users//Emil//10X//Baoyi_gp_test//CSOCclusters.csv")
+
+GHPOCcellID_obs = pd.read_csv(r"//mnt//c//Users//Emil//10X//Baoyi_gp_test//GHPOCcellID_obs.csv") #x from seurat; y&z manually sorted to look like WT3.obs.index
+GHPOCtsne = pd.read_csv(r"//mnt//c//Users//Emil//10X//Baoyi_gp_test///GHPOCcell_embeddings.csv") #renaming tsne to umap for coding only
+GHPOCcell_clusters = pd.read_csv(r"//mnt//c//Users//Emil//10X//Baoyi_gp_test//GHPOCclusters.csv")
+
+GHSOCcellID_obs = pd.read_csv(r"//mnt//c//Users//Emil//10X//Baoyi_gp_test//GHSOCcellID_obs.csv") #x from seurat; y&z manually sorted to look like WT3.obs.index
+GHSOCtsne = pd.read_csv(r"//mnt//c//Users//Emil//10X//Baoyi_gp_test///GHSOCcell_embeddings.csv") #renaming tsne to umap for coding only
+GHSOCcell_clusters = pd.read_csv(r"//mnt//c//Users//Emil//10X//Baoyi_gp_test//GHSOCclusters.csv")
+
+#Calling Cell ID from the file from R
+cellID_obs_CPOC = CPOCcellID_obs[CPOCcellID_obs["x"].str.contains("10X_21_020")]
+cellID_obs_CSOC = CSOCcellID_obs[CSOCcellID_obs["x"].str.contains("10X_21_019")]
+cellID_obs_GHPOC = GHPOCcellID_obs[GHPOCcellID_obs["x"].str.contains("10X_21_018")]
+cellID_obs_GHSOC = GHSOCcellID_obs[GHSOCcellID_obs["x"].str.contains("10X_21_017")]
+
+cellID_obs_CSOC
+
+#Matching and filtering Cell ID from Loom by Processed CellID from R
+CPOC = CPOC[np.isin(CPOC.obs.index, cellID_obs_CPOC["x"])]
+CSOC = CSOC[np.isin(CSOC.obs.index, cellID_obs_CSOC["x"])]
+GHPOC = GHPOC[np.isin(GHPOC.obs.index, cellID_obs_GHPOC["x"])]
+GHSOC = GHSOC[np.isin(GHSOC.obs.index, cellID_obs_GHSOC["x"])]
+
+sample_one = CPOC.concatenate(CSOC, GHPOC, GHSOC,index_unique=None)
+GHSOC
+
+#cast our index as a data frame and change the column name
+GHSOCsample_one_index = pd.DataFrame(GHSOC.obs.index)
+GHSOCsample_one = GHSOCsample_one_index.rename(columns = {0:'CellID'})
 
 
+GHPOCsample_one_index = pd.DataFrame(GHPOC.obs.index)
+GHPOCsample_one = GHPOCsample_one_index.rename(columns = {0:'CellID'})
+
+
+CPOCsample_one_index = pd.DataFrame(CPOC.obs.index)
+CPOCsample_one = CPOCsample_one_index.rename(columns = {0:'CellID'})
+
+
+CSOCsample_one_index = pd.DataFrame(CSOC.obs.index)
+CSOCsample_one = CSOCsample_one_index.rename(columns = {0:'CellID'})
+
+#GHSOCsample_one
+#GHPOCsample_one
+#CPOCsample_one
+#CSOCsample_one
+CSOCsample_one
+
+GHPOCtsne = GHPOCtsne.rename(columns = {'Unnamed: 0':'CellID'})
+
+GHSOCtsne = GHSOCtsne.rename(columns = {'Unnamed: 0':'CellID'})
+
+CSOCtsne = CSOCtsne.rename(columns = {'Unnamed: 0':'CellID'})
+
+CPOCtsne = CPOCtsne.rename(columns = {'Unnamed: 0':'CellID'})
+
+GHSOCtsne
+
+#merge tsne data with concantenated
+GHPOCtsne_combined = GHPOCsample_one.merge(GHPOCtsne, on = 'CellID')
+GHPOCtsne_combined = GHPOCtsne_combined.iloc[:,1:]
+
+
+GHSOCtsne_combined = GHSOCsample_one.merge(GHSOCtsne, on = 'CellID')
+GHSOCtsne_combined = GHSOCtsne_combined.iloc[:,1:]
+
+
+CSOCtsne_combined = CSOCsample_one.merge(CSOCtsne, on = 'CellID')
+CSOCtsne_combined = CSOCtsne_combined.iloc[:,1:]
+
+
+CPOCtsne_combined = CPOCsample_one.merge(CPOCtsne, on = 'CellID')
+CPOCtsne_combined = CPOCtsne_combined.iloc[:,1:]
+
+CSOCtsne_combined
+
+GHSOC.obsm['X_tsne'] = GHSOCtsne_combined.values
+CPOC.obsm['X_tsne'] = CPOCtsne_combined.values
+GHPOC.obsm['X_tsne'] = GHPOCtsne_combined.values
+CSOC.obsm['X_tsne'] = CSOCtsne_combined.values
+
+cellID_obs_CPOC["x"]
+
+CPSOC = CPOC.concatenate(CSOC)
+GHPSOC = GHPOC.concatenate(GHSOC)
+
+CGHPSOC = CPOC.concatenate(CSOC, GHPOC,GHSOC)
+
+scv.pl.proportions(CPSOC)
+
+scv.pp.filter_genes(CPSOC, min_shared_counts=20)
+scv.pp.normalize_per_cell(CPSOC)
+scv.pp.filter_genes_dispersion(CPSOC, n_top_genes=2000)
+scv.pp.log1p(CPSOC)
+
+scv.pp.filter_genes(GHPSOC, min_shared_counts=20)
+scv.pp.normalize_per_cell(GHPSOC)
+scv.pp.filter_genes_dispersion(GHPSOC, n_top_genes=2000)
+scv.pp.log1p(GHPSOC)
+
+scv.pp.filter_genes(CSOC, min_shared_counts=20)
+scv.pp.normalize_per_cell(CSOC)
+scv.pp.filter_genes_dispersion(CSOC, n_top_genes=2000)
+scv.pp.log1p(CSOC)
+
+scv.pp.filter_genes(PSOC, min_shared_counts=20)
+scv.pp.normalize_per_cell(PSOC)
+scv.pp.filter_genes_dispersion(PSOC, n_top_genes=2000)
+scv.pp.log1p(PSOC)
+
+scv.pp.filter_genes(GHPOC, min_shared_counts=20)
+scv.pp.normalize_per_cell(GHPOC)
+scv.pp.filter_genes_dispersion(GHPOC, n_top_genes=2000)
+scv.pp.log1p(GHPOC)
+
+scv.pp.filter_genes(GHSOC, min_shared_counts=20)
+scv.pp.normalize_per_cell(GHSOC)
+scv.pp.filter_genes_dispersion(GHSOC, n_top_genes=2000)
+scv.pp.log1p(GHSOC)
+
+scv.pp.filter_and_normalize(CPSOC, min_shared_counts=20, n_top_genes=2000)
+scv.pp.moments(CPSOC, n_pcs=30, n_neighbors = 30)
+scv.pp.filter_and_normalize(GHPSOC, min_shared_counts=20, n_top_genes=2000)
+scv.pp.moments(CPSOC, n_pcs=30, n_neighbors = 30)
+scv.pp.filter_and_normalize(CSOC, min_shared_counts=20, n_top_genes=2000)
+scv.pp.moments(CPSOC, n_pcs=30, n_neighbors = 30)
+scv.pp.filter_and_normalize(CPOC, min_shared_counts=20, n_top_genes=2000)
+scv.pp.moments(CPSOC, n_pcs=30, n_neighbors = 30)
+scv.pp.filter_and_normalize(GHPOC, min_shared_counts=20, n_top_genes=2000)
+scv.pp.moments(CPSOC, n_pcs=30, n_neighbors = 30)
+scv.pp.filter_and_normalize(GHSOC, min_shared_counts=20, n_top_genes=2000)
+scv.pp.moments(CPSOC, n_pcs=30, n_neighbors = 30)
+
+scv.tl.velocity(CPSOC)
+scv.tl.velocity(GHPSOC)
+scv.tl.velocity(CSOC)
+scv.tl.velocity(CPOC)
+scv.tl.velocity(GHSOC)
+scv.tl.velocity(GHPOC)
+
+!jupyter nbextension enable widgetsnbextension --user --py
+
+scv.tl.velocity_graph(CPSOC)
+scv.tl.velocity_graph(GHPSOC)
+scv.tl.velocity_graph(CSOC)
+scv.tl.velocity_graph(CPOC)
+scv.tl.velocity_graph(GHPOC)
+scv.tl.velocity_graph(GHSOC)
+
+scv.tl.velocity_clusters(CPSOC)
+scv.tl.velocity_clusters(GHPSOC)
+scv.tl.velocity_clusters(CPOC)
+scv.tl.velocity_clusters(CSOC)
+scv.tl.velocity_clusters(GHSOC)
+scv.tl.velocity_clusters(GHPOC)
+
+scv.pl.velocity_embedding_stream(CPSOC, basis='tsne', color="velocity_clusters")
+
+scv.pl.velocity_embedding_stream(GHPSOC, basis='tsne', color="velocity_clusters")
+
+scv.pl.velocity_embedding_stream(CSOC, basis='tsne', color="velocity_clusters")
+
+scv.pl.velocity_embedding_stream(CPOC, basis='tsne', color="velocity_clusters")
+
+scv.pl.velocity_embedding_stream(GHSOC, basis='tsne', color="velocity_clusters")
+
+scv.pl.velocity_embedding_stream(GHPOC, basis='tsne', color="velocity_clusters")
+
+CPSOC.obs
+
+scv.pl.scatter(CPSOC, color='velocity_clusters')
+
+scv.pl.scatter(GHPSOC, color='velocity_clusters')
+
+scv.pl.scatter(CPOC, color='velocity_clusters')
+
+scv.pl.scatter(CSOC, color='velocity_clusters')
+
+scv.pl.scatter(GHSOC, color='velocity_clusters')
+
+scv.pl.scatter(GHPOC, color='velocity_clusters')
+
+scv.pl.velocity_embedding_grid(CPSOC,color = 'velocity_clusters', arrow_length = 6, arrow_size = 3, dpi=120)
+
+scv.pl.velocity_embedding_grid(GHPSOC,color = 'velocity_clusters', arrow_length = 6, arrow_size = 3, dpi=120)
+
+scv.pl.velocity_embedding_grid(CSOC,color = 'velocity_clusters', arrow_length = 6, arrow_size = 3, dpi=120)
+
+scv.pl.velocity_embedding_grid(CPOC,color = 'velocity_clusters', arrow_length = 6, arrow_size = 3, dpi=120)
+
+scv.pl.velocity_embedding_grid(GHPOC,color = 'velocity_clusters', arrow_length = 6, arrow_size = 3, dpi=120)
+
+scv.pl.velocity_embedding_grid(GHSOC,color = 'velocity_clusters', arrow_length = 6, arrow_size = 3, dpi=120)
+
+scv.tl.velocity_graph(CPSOC)
+scv.tl.velocity_graph(GHPSOC)
+scv.tl.velocity_graph(CSOC)
+scv.tl.velocity_graph(CPOC)
+scv.tl.velocity_graph(GHPOC)
+scv.tl.velocity_graph(GHSOC)
+
+scv.tl.score_genes_cell_cycle(CPSOC)
+scv.pl.scatter(CPSOC, color_gradients=['S_score', 'G2M_score'], smooth=False, perc=[5, 95])
+
+scv.tl.score_genes_cell_cycle(GHPSOC)
+scv.pl.scatter(GHPSOC, color_gradients=['S_score', 'G2M_score'], smooth=False, perc=[5, 95])
+
+scv.tl.score_genes_cell_cycle(CPOC)
+scv.pl.scatter(CPOC, color_gradients=['S_score', 'G2M_score'], smooth=False, perc=[5, 95])
+
+scv.tl.score_genes_cell_cycle(CSOC)
+scv.pl.scatter(CSOC, color_gradients=['S_score', 'G2M_score'], smooth=False, perc=[5, 95])
+
+scv.tl.score_genes_cell_cycle(GHPOC)
+scv.pl.scatter(GHPOC, color_gradients=['S_score', 'G2M_score'], smooth=False, perc=[5, 95])
+
+scv.tl.score_genes_cell_cycle(GHSOC)
+scv.pl.scatter(GHSOC, color_gradients=['S_score', 'G2M_score'], smooth=False, perc=[5, 95])
+
+scv.tl.velocity_pseudotime(CPSOC)
+scv.pl.scatter(CPSOC, color='velocity_pseudotime', cmap='gnuplot')
+
+scv.tl.velocity_pseudotime(GHPSOC)
+scv.pl.scatter(GHPSOC, color='velocity_pseudotime', cmap='gnuplot')
+
+scv.tl.velocity_pseudotime(CPOC)
+scv.pl.scatter(CPOC, color='velocity_pseudotime', cmap='gnuplot')
+
+scv.tl.velocity_pseudotime(CSOC)
+scv.pl.scatter(CSOC, color='velocity_pseudotime', cmap='gnuplot')
+
+scv.tl.velocity_pseudotime(GHPOC)
+scv.pl.scatter(GHPOC, color='velocity_pseudotime', cmap='gnuplot')
+
+scv.tl.velocity_pseudotime(GHSOC)
+scv.pl.scatter(GHSOC, color='velocity_pseudotime', cmap='gnuplot')
+
+scv.tl.recover_dynamics(CPSOC)
+scv.tl.recover_dynamics(GHPSOC)
+scv.tl.recover_dynamics(CPOC)
+scv.tl.recover_dynamics(CSOC)
+scv.tl.recover_dynamics(GHSOC)
+scv.tl.recover_dynamics(GHPOC)
+
+scv.tl.velocity(CPSOC, mode='dynamical')
+scv.tl.velocity_graph(CPSOC)
+
+scv.tl.velocity(GHPSOC, mode='dynamical')
+scv.tl.velocity_graph(GHPSOC)
+
+scv.tl.velocity(CSOC, mode='dynamical')
+scv.tl.velocity_graph(CSOC)
+
+scv.tl.velocity(CPOC, mode='dynamical')
+scv.tl.velocity_graph(CPOC)
+
+scv.tl.velocity(GHSOC, mode='dynamical')
+scv.tl.velocity_graph(GHSOC)
+
+scv.tl.velocity(GHPOC, mode='dynamical')
+scv.tl.velocity_graph(GHPOC)
+
+scv.pl.velocity_embedding_stream(CPSOC, basis='tsne')
+
+scv.pl.velocity_embedding_stream(GHPSOC, basis='tsne')
+
+scv.pl.velocity_embedding_stream(CPOC, basis='tsne')
+
+scv.pl.velocity_embedding_stream(CSOC, basis='tsne')
+
+scv.pl.velocity_embedding_stream(GHPOC, basis='tsne')
+
+scv.pl.velocity_embedding_stream(GHSOC, basis='tsne')
+
+df1 = CPSOC.var
+df1 = df1[(df1['fit_likelihood'] > .1) & df1['velocity_genes'] == True]
+
+kwargs = dict(xscale='log', fontsize=16)
+with scv.GridSpec(ncols=3) as pl:
+    pl.hist(df1['fit_alpha'], xlabel='transcription rate', **kwargs)
+    pl.hist(df1['fit_beta'] * df1['fit_scaling'], xlabel='splicing rate', xticks=[.1, .4, 1], **kwargs)
+    pl.hist(df1['fit_gamma'], xlabel='degradation rate', xticks=[.1, .4, 1], **kwargs)
+
+scv.get_df(CPSOC, 'fit*', dropna=True).head()
+
+df2 = GHPSOC.var
+df2 = df2[(df2['fit_likelihood'] > .1) & df2['velocity_genes'] == True]
+
+kwargs = dict(xscale='log', fontsize=16)
+with scv.GridSpec(ncols=3) as pl:
+    pl.hist(df2['fit_alpha'], xlabel='transcription rate', **kwargs)
+    pl.hist(df2['fit_beta'] * df2['fit_scaling'], xlabel='splicing rate', xticks=[.1, .4, 1], **kwargs)
+    pl.hist(df2['fit_gamma'], xlabel='degradation rate', xticks=[.1, .4, 1], **kwargs)
+
+scv.get_df(GHPSOC, 'fit*', dropna=True).head()
+
+df3 = CSOC.var
+df3 = df3[(df3['fit_likelihood'] > .1) & df3['velocity_genes'] == True]
+
+kwargs = dict(xscale='log', fontsize=16)
+with scv.GridSpec(ncols=3) as pl:
+    pl.hist(df3['fit_alpha'], xlabel='transcription rate', **kwargs)
+    pl.hist(df3['fit_beta'] * df3['fit_scaling'], xlabel='splicing rate', xticks=[.1, .4, 1], **kwargs)
+    pl.hist(df3['fit_gamma'], xlabel='degradation rate', xticks=[.1, .4, 1], **kwargs)
+
+scv.get_df(CSOC, 'fit*', dropna=True).head()
+
+df4 = CPOC.var
+df4 = df4[(df4['fit_likelihood'] > .1) & df4['velocity_genes'] == True]
+
+kwargs = dict(xscale='log', fontsize=16)
+with scv.GridSpec(ncols=3) as pl:
+    pl.hist(df4['fit_alpha'], xlabel='transcription rate', **kwargs)
+    pl.hist(df4['fit_beta'] * df4['fit_scaling'], xlabel='splicing rate', xticks=[.1, .4, 1], **kwargs)
+    pl.hist(df4['fit_gamma'], xlabel='degradation rate', xticks=[.1, .4, 1], **kwargs)
+
+scv.get_df(CPOC, 'fit*', dropna=True).head()
+
+df5 = GHPOC.var
+df5 = df5[(df5['fit_likelihood'] > .1) & df5['velocity_genes'] == True]
+
+kwargs = dict(xscale='log', fontsize=16)
+with scv.GridSpec(ncols=3) as pl:
+    pl.hist(df5['fit_alpha'], xlabel='transcription rate', **kwargs)
+    pl.hist(df5['fit_beta'] * df5['fit_scaling'], xlabel='splicing rate', xticks=[.1, .4, 1], **kwargs)
+    pl.hist(df5['fit_gamma'], xlabel='degradation rate', xticks=[.1, .4, 1], **kwargs)
+
+scv.get_df(GHPOC, 'fit*', dropna=True).head()
+
+df6 = GHSOC.var
+df6 = df6[(df6['fit_likelihood'] > .1) & df6['velocity_genes'] == True]
+
+kwargs = dict(xscale='log', fontsize=16)
+with scv.GridSpec(ncols=3) as pl:
+    pl.hist(df6['fit_alpha'], xlabel='transcription rate', **kwargs)
+    pl.hist(df6['fit_beta'] * df6['fit_scaling'], xlabel='splicing rate', xticks=[.1, .4, 1], **kwargs)
+    pl.hist(df6['fit_gamma'], xlabel='degradation rate', xticks=[.1, .4, 1], **kwargs)
+
+scv.get_df(GHSOC, 'fit*', dropna=True).head()
+
+scv.tl.latent_time(CPSOC)
+scv.pl.scatter(CPSOC, color='latent_time', color_map='gnuplot', size=80)
+
+scv.tl.latent_time(GHPSOC)
+scv.pl.scatter(GHPSOC, color='latent_time', color_map='gnuplot', size=80)
+
+scv.tl.latent_time(CPOC)
+scv.pl.scatter(CPOC, color='latent_time', color_map='gnuplot', size=80)
+
+scv.tl.latent_time(CSOC)
+scv.pl.scatter(CSOC, color='latent_time', color_map='gnuplot', size=80)
+
+scv.tl.latent_time(GHSOC)
+scv.pl.scatter(GHSOC, color='latent_time', color_map='gnuplot', size=80)
+
+scv.tl.latent_time(GHPOC)
+scv.pl.scatter(GHPOC, color='latent_time', color_map='gnuplot', size=80)
+
+top_genes1 = CPSOC.var['fit_likelihood'].sort_values(ascending=False).index[:300]
+scv.pl.scatter(CPSOC, basis=top_genes[:15], ncols=5, frameon=False, color = 'velocity_clusters')
+
+top_genes2 = GHPSOC.var['fit_likelihood'].sort_values(ascending=False).index[:300]
+scv.pl.scatter(CPSOC, basis=top_genes2[:15], ncols=5, frameon=False, color = 'velocity_clusters')
+
+top_genes3 = CSOC.var['fit_likelihood'].sort_values(ascending=False).index[:300]
+scv.pl.scatter(CPSOC, basis=top_genes3[:15], ncols=5, frameon=False, color = 'velocity_clusters')
+
+top_genes4 = CPOC.var['fit_likelihood'].sort_values(ascending=False).index[:300]
+scv.pl.scatter(CPSOC, basis=top_genes4[:15], ncols=5, frameon=False, color = 'velocity_clusters')
+
+top_genes5 = GHPOC.var['fit_likelihood'].sort_values(ascending=False).index[:300]
+scv.pl.scatter(CPSOC, basis=top_genes5[:15], ncols=5, frameon=False, color = 'velocity_clusters')
+
+top_genes6 = GHSOC.var['fit_likelihood'].sort_values(ascending=False).index[:300]
+scv.pl.scatter(CPSOC, basis=top_genes6[:15], ncols=5, frameon=False, color = 'velocity_clusters')
+
+scv.pl.heatmap(CPSOC, var_names=top_genes1, sortby='latent_time', col_color='velocity_clusters', n_convolve=100)
+
+scv.pl.heatmap(GHPSOC, var_names=top_genes2, sortby='latent_time', col_color='velocity_clusters', n_convolve=100)
+
+scv.pl.heatmap(CSOC, var_names=top_genes3, sortby='latent_time', col_color='velocity_clusters', n_convolve=100)
+
+scv.pl.heatmap(CPOC, var_names=top_genes4, sortby='latent_time', col_color='velocity_clusters', n_convolve=100)
+
+scv.pl.heatmap(GHPOC, var_names=top_genes5, sortby='latent_time', col_color='velocity_clusters', n_convolve=100)
+
+scv.pl.heatmap(GHSOC, var_names=top_genes6, sortby='latent_time', col_color='velocity_clusters', n_convolve=100)
+
+#var_names can be different for different analysis
+var_names = ['Igsf8', 'Fn1', 'Basp1', 'Col1a2']
+
+scv.pl.scatter(CPSOC, var_names, frameon=False, color = 'velocity_clusters')
+scv.pl.scatter(CPSOC, x='latent_time', y=var_names, frameon=False, color = 'velocity_clusters')
+
+scv.pl.scatter(GHPSOC, var_names, frameon=False, color = 'velocity_clusters')
+scv.pl.scatter(GHPSOC, x='latent_time', y=var_names, frameon=False, color = 'velocity_clusters')
+
+scv.pl.scatter(CPOC, var_names, frameon=False, color = 'velocity_clusters')
+scv.pl.scatter(CPOC, x='latent_time', y=var_names, frameon=False, color = 'velocity_clusters')
+
+scv.pl.scatter(CSOC, var_names, frameon=False, color = 'velocity_clusters')
+scv.pl.scatter(CSOC, x='latent_time', y=var_names, frameon=False, color = 'velocity_clusters')
+
+scv.pl.scatter(GHPOC, var_names, frameon=False, color = 'velocity_clusters')
+scv.pl.scatter(GHPOC, x='latent_time', y=var_names, frameon=False, color = 'velocity_clusters')
+
+scv.pl.scatter(GHSOC, var_names, frameon=False, color = 'velocity_clusters')
+scv.pl.scatter(GHSOC, x='latent_time', y=var_names, frameon=False, color = 'velocity_clusters')
+
+x, y = scv.utils.get_cell_transitions(CPSOC, basis='tsne')
+ax = scv.pl.velocity_graph(CPSOC, c='lightgrey', edge_width=.05, show=False)
+ax = scv.pl.scatter(CPSOC, x=x, y=y, s=120, c='ascending', cmap='gnuplot', ax=ax)
+
+x, y = scv.utils.get_cell_transitions(GHPSOC, basis='tsne')
+ax = scv.pl.velocity_graph(GHPSOC, c='lightgrey', edge_width=.05, show=False)
+ax = scv.pl.scatter(GHPSOC, x=x, y=y, s=120, c='ascending', cmap='gnuplot', ax=ax)
+
+x, y = scv.utils.get_cell_transitions(CPOC, basis='tsne')
+ax = scv.pl.velocity_graph(CPOC, c='lightgrey', edge_width=.05, show=False)
+ax = scv.pl.scatter(CPOC, x=x, y=y, s=120, c='ascending', cmap='gnuplot', ax=ax)
+
+x, y = scv.utils.get_cell_transitions(CSOC, basis='tsne')
+ax = scv.pl.velocity_graph(CSOC, c='lightgrey', edge_width=.05, show=False)
+ax = scv.pl.scatter(CSOC, x=x, y=y, s=120, c='ascending', cmap='gnuplot', ax=ax)
+
+x, y = scv.utils.get_cell_transitions(GHSOC, basis='tsne')
+ax = scv.pl.velocity_graph(GHSOC, c='lightgrey', edge_width=.05, show=False)
+ax = scv.pl.scatter(GHSOC, x=x, y=y, s=120, c='ascending', cmap='gnuplot', ax=ax)
+
+x, y = scv.utils.get_cell_transitions(GHPOC, basis='tsne')
+ax = scv.pl.velocity_graph(GHPOC, c='lightgrey', edge_width=.05, show=False)
+ax = scv.pl.scatter(GHPOC, x=x, y=y, s=120, c='ascending', cmap='gnuplot', ax=ax)
+
+scv.pl.scatter(CPSOC, 'Col1a2', color=['velocity_clusters', 'velocity'])
+
+scv.pl.scatter(GHPSOC, 'Col1a2', color=['velocity_clusters', 'velocity'])
+
+scv.pl.scatter(CPOC, 'Col1a2', color=['velocity_clusters', 'velocity'])
+
+scv.pl.scatter(CSOC, 'Col1a2', color=['velocity_clusters', 'velocity'])
+
+scv.pl.scatter(GHSOC, 'Col1a2', color=['velocity_clusters', 'velocity'])
+
+scv.pl.scatter(GHPOC, 'Col1a2', color=['velocity_clusters', 'velocity'])
+
+scv.tl.velocity_graph(CPSOC)
+scv.tl.velocity_graph(GHPSOC)
+scv.tl.velocity_graph(CSOC)
+scv.tl.velocity_graph(CPOC)
+scv.tl.velocity_graph(GHSOC)
+scv.tl.velocity_graph(GHPOC)
+
+scv.pl.velocity_embedding_grid(CPSOC, legend_loc='on data', basis='tsne', dpi=400)
+
+scv.pl.velocity_embedding_grid(GHPSOC, legend_loc='on data', basis='tsne', dpi=400)
+
+scv.pl.velocity_embedding_grid(CSOC, legend_loc='on data', basis='tsne', dpi=400)
+
+scv.pl.velocity_embedding_grid(CPOC, legend_loc='on data', basis='tsne', dpi=400)
+
+scv.pl.velocity_embedding_grid(GHPOC, legend_loc='on data', basis='tsne', dpi=400)
+
+scv.pl.velocity_embedding_grid(GHSOC, legend_loc='on data', basis='tsne', dpi=400)
+
+scv.tl.rank_velocity_genes(CPSOC, groupby='velocity_clusters', min_corr=.3)
+
+dfCPSOC = scv.DataFrame(CPSOC.uns['rank_velocity_genes']['names'])
+dfCPSOC.head()
+#This one is to indentify the top-5 velocity genes for each cluster
+
+scv.tl.rank_velocity_genes(GHPSOC, groupby='velocity_clusters', min_corr=.3)
+
+dfGHPSOC = scv.DataFrame(GHPSOC.uns['rank_velocity_genes']['names'])
+dfGHPSOC.head()
+#This one is to indentify the top-5 velocity genes for each cluster
+
+scv.tl.rank_velocity_genes(CPOC, groupby='velocity_clusters', min_corr=.3)
+
+dfCPOC = scv.DataFrame(CPOC.uns['rank_velocity_genes']['names'])
+dfCPOC.head()
+#This one is to indentify the top-5 velocity genes for each cluster
+
+scv.tl.rank_velocity_genes(CSOC, groupby='velocity_clusters', min_corr=.3)
+
+dfCSOC = scv.DataFrame(CSOC.uns['rank_velocity_genes']['names'])
+dfCSOC.head()
+#This one is to indentify the top-5 velocity genes for each cluster
+
+scv.tl.rank_velocity_genes(GHPOC, groupby='velocity_clusters', min_corr=.3)
+
+dfGHPOC = scv.DataFrame(GHPOC.uns['rank_velocity_genes']['names'])
+dfGHPOC.head()
+#This one is to indentify the top-5 velocity genes for each cluster
+
+scv.tl.rank_velocity_genes(GHSOC, groupby='velocity_clusters', min_corr=.3)
+
+dfGHSOC = scv.DataFrame(GHSOC.uns['rank_velocity_genes']['names'])
+dfGHSOC.head()
+#This one is to indentify the top-5 velocity genes for each cluster
+
+#different clusters should be used for different objects
+
+for cluster in ['0','1','2','5']:
+    scv.pl.scatter(CPSOC, df[cluster][:5], ylabel=cluster, frameon=False, color = 'velocity_clusters')
+    
+    
+for cluster in ['0','1','2','5']:
+    scv.pl.scatter(GHPSOC, df[cluster][:5], ylabel=cluster, frameon=False, color = 'velocity_clusters')
+    
+    
+for cluster in ['0','1','2','5']:
+    scv.pl.scatter(CPOC, df[cluster][:5], ylabel=cluster, frameon=False, color = 'velocity_clusters')
+    
+    
+for cluster in ['0','1','2','5']:
+    scv.pl.scatter(CSOC, df[cluster][:5], ylabel=cluster, frameon=False, color = 'velocity_clusters')
+    
+    
+for cluster in ['0','1','2','5']:
+    scv.pl.scatter(GHPOC, df[cluster][:5], ylabel=cluster, frameon=False, color = 'velocity_clusters')
+    
+    
+for cluster in ['0','1','2','5']:
+    scv.pl.scatter(GHSOC, df[cluster][:5], ylabel=cluster, frameon=False, color = 'velocity_clusters')
+    
+kwargs = dict(frameon=False, size=10, linewidth=1.5,
+              add_outline='0, 1, 2')
+
+scv.pl.scatter(CPSOC, df['0'][:5], ylabel='0', **kwargs)
+scv.pl.scatter(CPSOC, df['1'][:5], ylabel='1', **kwargs)
+
+    
+kwargs = dict(frameon=False, size=10, linewidth=1.5,
+              add_outline='0, 1, 2')
+
+scv.pl.scatter(GHPSOC, df['0'][:5], ylabel='0', **kwargs)
+scv.pl.scatter(GHPSOC, df['1'][:5], ylabel='1', **kwargs)
+
+    
+kwargs = dict(frameon=False, size=10, linewidth=1.5,
+              add_outline='0, 1, 2')
+
+scv.pl.scatter(CSOC, df['0'][:5], ylabel='0', **kwargs)
+scv.pl.scatter(CSOC, df['1'][:5], ylabel='1', **kwargs)
+
+    
+kwargs = dict(frameon=False, size=10, linewidth=1.5,
+              add_outline='0, 1, 2')
+
+scv.pl.scatter(CPOC, df['0'][:5], ylabel='0', **kwargs)
+scv.pl.scatter(CPOC, df['1'][:5], ylabel='1', **kwargs)
+
+    
+kwargs = dict(frameon=False, size=10, linewidth=1.5,
+              add_outline='0, 1, 2')
+
+scv.pl.scatter(GHSOC, df['0'][:5], ylabel='0', **kwargs)
+scv.pl.scatter(GHSOC, df['1'][:5], ylabel='1', **kwargs)
+
+    
+kwargs = dict(frameon=False, size=10, linewidth=1.5,
+              add_outline='0, 1, 2')
+
+scv.pl.scatter(GHPOC, df['0'][:5], ylabel='0', **kwargs)
+scv.pl.scatter(GHPOC, df['1'][:5], ylabel='1', **kwargs)
+
+scv.tl.velocity_confidence(CPSOC)
+keys = 'velocity_length', 'velocity_confidence'
+scv.pl.scatter(CPSOC, c=keys, cmap='coolwarm', perc=[5, 95])
+#These provide insights where cells differentiate at a slower/faster pace, and where the direction is un-/determined.
+
+scv.tl.velocity_confidence(GHPSOC)
+keys = 'velocity_length', 'velocity_confidence'
+scv.pl.scatter(GHPSOC, c=keys, cmap='coolwarm', perc=[5, 95])
+#These provide insights where cells differentiate at a slower/faster pace, and where the direction is un-/determined.
+
+scv.tl.velocity_confidence(CPOC)
+keys = 'velocity_length', 'velocity_confidence'
+scv.pl.scatter(CPOC, c=keys, cmap='coolwarm', perc=[5, 95])
+#These provide insights where cells differentiate at a slower/faster pace, and where the direction is un-/determined.
+
+scv.tl.velocity_confidence(CSOC)
+keys = 'velocity_length', 'velocity_confidence'
+scv.pl.scatter(CSOC, c=keys, cmap='coolwarm', perc=[5, 95])
+#These provide insights where cells differentiate at a slower/faster pace, and where the direction is un-/determined.
+
+scv.tl.velocity_confidence(GHSOC)
+keys = 'velocity_length', 'velocity_confidence'
+scv.pl.scatter(GHSOC, c=keys, cmap='coolwarm', perc=[5, 95])
+#These provide insights where cells differentiate at a slower/faster pace, and where the direction is un-/determined.
+
+scv.tl.velocity_confidence(GHPOC)
+keys = 'velocity_length', 'velocity_confidence'
+scv.pl.scatter(GHPOC, c=keys, cmap='coolwarm', perc=[5, 95])
+#These provide insights where cells differentiate at a slower/faster pace, and where the direction is un-/determined.
+
+dfVCPSOC = CPSOC.obs.groupby('velocity_clusters')[keys].mean().T
+dfVCPSOC.style.background_gradient(cmap='coolwarm', axis=1)
+
+dfVGHPSOC = GHPSOC.obs.groupby('velocity_clusters')[keys].mean().T
+dfVGHPSOC.style.background_gradient(cmap='coolwarm', axis=1)
+
+dfVCPOS = CPOC.obs.groupby('velocity_clusters')[keys].mean().T
+dfVCPOS.style.background_gradient(cmap='coolwarm', axis=1)
+
+dfVCSOC = CSOC.obs.groupby('velocity_clusters')[keys].mean().T
+dfVCSOC.style.background_gradient(cmap='coolwarm', axis=1)
+
+dfVGHSOC = GHSOC.obs.groupby('velocity_clusters')[keys].mean().T
+dfVGHSOC.style.background_gradient(cmap='coolwarm', axis=1)
+
+dfVGHPOC = GHPOC.obs.groupby('velocity_clusters')[keys].mean().T
+dfVGHPOC.style.background_gradient(cmap='coolwarm', axis=1)
+
+scv.pl.velocity_graph(CPSOC, threshold=.2)
+
+scv.pl.velocity_graph(GHPSOC, threshold=.2)
+
+scv.pl.velocity_graph(CSOC, threshold=.2)
+
+scv.pl.velocity_graph(CPOC, threshold=.2)
+
+scv.pl.velocity_graph(GHSOC, threshold=.2)
+
+scv.pl.velocity_graph(GHPOC, threshold=.2)
+
+CSOC.obsp
+
+CPSOC.uns['neighbors']['distances'] = CPSOC.obsp['distances']
+CPSOC.uns['neighbors']['connectivities'] = CPSOC.obsp['connectivities']
+
+scv.tl.paga(CPSOC, groups='velocity_clusters')
+dfPAGACPSOC = scv.get_df(CPSOC, 'paga/transitions_confidence', precision=2).T
+dfPAGACPSOC.style.background_gradient(cmap='Blues').format('{:.2g}')
+
+GHPSOC.uns['neighbors']['distances'] = GHPSOC.obsp['distances']
+GHPSOC.uns['neighbors']['connectivities'] = GHPSOC.obsp['connectivities']
+
+scv.tl.paga(GHPSOC, groups='velocity_clusters')
+dfPAGAGHPSOC = scv.get_df(GHPSOC, 'paga/transitions_confidence', precision=2).T
+dfPAGAGHPSOC.style.background_gradient(cmap='Blues').format('{:.2g}')
+
+CPOC.uns['neighbors']['distances'] = CPSOC.obsp['distances']
+CPOC.uns['neighbors']['connectivities'] = CPSOC.obsp['connectivities']
+
+scv.tl.paga(CPOC, groups='velocity_clusters')
+dfPAGACPOC = scv.get_df(CPOC, 'paga/transitions_confidence', precision=2).T
+dfPAGACPOC.style.background_gradient(cmap='Blues').format('{:.2g}')
+
+CSOC.uns['neighbors']['distances'] = CSOC.obsp['distances']
+CSOC.uns['neighbors']['connectivities'] = CSOC.obsp['connectivities']
+
+scv.tl.paga(CSOC, groups='velocity_clusters')
+dfPAGACSOC = scv.get_df(CSOC, 'paga/transitions_confidence', precision=2).T
+dfPAGACSOC.style.background_gradient(cmap='Blues').format('{:.2g}')
+
+GHPOC.uns['neighbors']['distances'] = GHPOC.obsp['distances']
+GHPOC.uns['neighbors']['connectivities'] = GHPOC.obsp['connectivities']
+
+scv.tl.paga(GHPOC, groups='velocity_clusters')
+dfPAGAGHPOC = scv.get_df(GHPOC, 'paga/transitions_confidence', precision=2).T
+dfPAGAGHPOC.style.background_gradient(cmap='Blues').format('{:.2g}')
+
+GHSOC.uns['neighbors']['distances'] = GHSOC.obsp['distances']
+GHSOC.uns['neighbors']['connectivities'] = GHSOC.obsp['connectivities']
+
+scv.tl.paga(GHSOC, groups='velocity_clusters')
+dfPAGAGHSOC = scv.get_df(GHSOC, 'paga/transitions_confidence', precision=2).T
+dfPAGAGHSOC.style.background_gradient(cmap='Blues').format('{:.2g}')
+
+scv.pl.paga(CPSOC, basis='tsne', size=50, alpha=.1,
+            min_edge_width=2, node_size_scale=1.5, color = 'velocity_clusters')
+            
+scv.pl.paga(GHPSOC, basis='tsne', size=50, alpha=.1,
+            min_edge_width=2, node_size_scale=1.5, color = 'velocity_clusters')
+
+scv.pl.paga(CPOC, basis='tsne', size=50, alpha=.1,
+            min_edge_width=2, node_size_scale=1.5, color = 'velocity_clusters')
+
+scv.pl.paga(CSOC, basis='tsne', size=50, alpha=.1,
+            min_edge_width=2, node_size_scale=1.5, color = 'velocity_clusters')
+
+scv.pl.paga(GHPOC, basis='tsne', size=50, alpha=.1,
+            min_edge_width=2, node_size_scale=1.5, color = 'velocity_clusters')
+
+scv.pl.paga(GHSOC, basis='tsne', size=50, alpha=.1,
+            min_edge_width=2, node_size_scale=1.5, color = 'velocity_clusters')
+            
 SCENIC
 ________________
 
