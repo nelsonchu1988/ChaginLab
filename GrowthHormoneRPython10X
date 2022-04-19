@@ -61,8 +61,15 @@ return (Seurat)
 
 poc.data <- Read10X_h5("C:/Users/Emil/10X/growthplate/filtered_feature_bc_matrix_poc.h5", use.names = TRUE, unique.features = TRUE)
 poc <- CreateSeuratObject(counts = poc.data, project = "poc", min.cells = 3, min.features = 200)
+
 poc[["percent.rb"]] <- PercentageFeatureSet(poc, pattern = "^Rps|^Rpl|^Mrps|^Mrpl", assay = 'RNA')
 poc <- CellCycleScoring(poc, s.features = m.s.genes, g2m.features = m.g2m.genes, set.ident = FALSE)
+
+#FOR HUMANS
+H_FC[["percent.rb"]] <- PercentageFeatureSet(H_FC, pattern = "^RPS|^RPL|^MRPS|^MRPL", assay = 'RNA')
+poc[["percent.mt"]] <- PercentageFeatureSet(poc, pattern = "^MT-")
+
+
 poc[["percent.mt"]] <- PercentageFeatureSet(poc, pattern = "^mt-")
 poc <- ScaleData(poc, verbose = T, vars.to.regress = c('nCount_RNA', 'percent.mt', "percent.rb","S.Score","G2M.Score"))
 poc <- subset(poc, subset = nCount_RNA > 1000 & nCount_RNA < 20000 & nFeature_RNA > 600 & nFeature_RNA < 6000 & percent.mt < 15 & percent.rb < 30)
