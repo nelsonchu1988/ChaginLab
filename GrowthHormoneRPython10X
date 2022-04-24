@@ -39,7 +39,7 @@ m.s.genes <- convertHumanGeneList(cc.genes.updated.2019$s.genes)
 m.g2m.genes <- convertHumanGeneList(cc.genes.updated.2019$g2m.genes)
 
 s.genes <- cc.genes.updated.2019$s.genes
->g2m.genes <- cc.genes.updated.2019$g2m.genes
+g2m.genes <- cc.genes.updated.2019$g2m.genes
 
 #Create the function for creating and processing the Seurat objects
 
@@ -71,8 +71,8 @@ poc[["percent.mt"]] <- PercentageFeatureSet(poc, pattern = "^MT-")
 
 
 poc[["percent.mt"]] <- PercentageFeatureSet(poc, pattern = "^mt-")
-poc <- ScaleData(poc, verbose = T, vars.to.regress = c('nCount_RNA', 'percent.mt', "percent.rb","S.Score","G2M.Score"))
 poc <- subset(poc, subset = nCount_RNA > 1000 & nCount_RNA < 20000 & nFeature_RNA > 600 & nFeature_RNA < 6000 & percent.mt < 15 & percent.rb < 30)
+poc <- ScaleData(poc, verbose = T, vars.to.regress = c('nCount_RNA', 'percent.mt', "percent.rb","S.Score","G2M.Score"))
 poc <- ProcessSeu(poc)
 
 soc.data <- Read10X_h5("C:/Users/Emil/10X/growthplate/filtered_feature_bc_matrix_soc.h5", use.names = TRUE, unique.features = TRUE)
